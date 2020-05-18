@@ -2,7 +2,7 @@ module ChatApp;
 
 // Written by Einar Broch Johnsen
 
-export * from ChatApp;
+export ProbabilityDist, Poker, PokerImp from ChatApp;
 
 type Turn = Int;
 
@@ -55,7 +55,7 @@ interface Client {
 interface Directory {
     Unit disconnect(Poker p);
     Unit leave(Client cl);
-    Unit login(Client cl);
+    Unit login(Int id, ProbabilityDist pd, Int sizeOfComp, Int inviteProb);
     Unit befriend();
     Unit poke(Int turn, Accumulator acc);
 }
@@ -123,7 +123,7 @@ class ChatImp (Client initiator) implements Chat {
     }
 }
 
-class Client(ProbabilityDist prob, Int sizeOfComp, Int inviteProb) implements Client {
+class Client(Int id, ProbabilityDist prob, Int sizeOfComp, Int inviteProb) implements Client {
     List<Chat> chats = Nil;
     List<Client> friends = Nil;
     Int r = 0;
@@ -197,7 +197,8 @@ class DirectoryImp(Int befriend_threshold) implements Directory {
 
     Unit leave(Client cl){ clients = without(clients,cl); }
 
-    Unit login(Client cl){ // Not measured, no bumping
+    Unit login(Int id, ProbabilityDist pd, Int sizeOfComp, Int inviteProb) { // Not measured, no bumping
+        Client cl = new Client(id,pd,sizeOfComp,inviteProb);
         clients = Cons(cl,clients);
     }
 
@@ -257,9 +258,8 @@ class PokerImp(Int nbrOfDirectories, Int nbrOfClients, Turn nbrOfTurns,
         // Create clients
         Int nbr = nbrOfClients;
         while (nbr > 0){
-            Client cl = new Client(pd,sizeOfComp,inviteProb);
             index = (nbr % nbrOfDirectories);
-            f= nth(dirs,index)!login(cl);
+            f= nth(dirs,index)!login(nbr,pd,sizeOfComp,inviteProb);
             futlist = Cons(f,futlist);
             nbr = nbr - 1;
         }
