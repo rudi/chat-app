@@ -20,6 +20,7 @@ enum class action : uint8_t {
   invite,
   compute,
   ignore,
+  error,
   none
 };
 
@@ -229,6 +230,7 @@ client(caf::stateful_actor<client_state>* self, const uint64_t /*id*/,
     },
     [=](act_atom, behavior_factory& factory, const caf::actor& accumulator) {
       auto& s = self->state;
+      uint8_t fib_index = 35;
       auto index = static_cast<size_t>(
         s.rand.next_int(static_cast<uint32_t>(s.chats.size())));
       switch (factory.apply(s.rand.next_int(100))) {
@@ -247,7 +249,13 @@ client(caf::stateful_actor<client_state>* self, const uint64_t /*id*/,
             self->send(accumulator, stop_atom::value, action::none);
           break;
         case action::compute:
-          fibonacci(35);
+	  for(size_t i = 0; i < 10000; ++i) {
+            if (fibonacci(fib_index) != 9227465) {
+              self->send(accumulator, stop_atom::value, action::error);
+	      fib_index = fib_index + 1;;
+	    }
+	  }
+
           self->send(accumulator, stop_atom::value, action::compute);
           break;
         case action::invite: {

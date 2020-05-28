@@ -17,6 +17,7 @@ primitive Leave
 primitive Invite
 primitive Compute
 primitive Ignore
+primitive Error
 
 type Action is
   ( Post
@@ -25,6 +26,7 @@ type Action is
   | Invite
   | Compute
   | Ignore
+  | Error
   | None
   )
 
@@ -119,6 +121,7 @@ actor Client
   let _directory: Directory
   let _dice: DiceRoll
   let _rand: SimpleRand
+  var _fib_index: U8
 
   new create(id: U64, directory: Directory, seed: U64) =>
     _id = id
@@ -127,6 +130,7 @@ actor Client
     _directory = directory
     _rand = SimpleRand(seed)
     _dice = DiceRoll(_rand)
+    _fib_index = 35
 
   be befriend(client: Client) =>
     _friends.push(client)
@@ -167,7 +171,17 @@ actor Client
       match behavior(_dice)
       | Post => _chats(index)?.post(None, accumulator)
       | Leave => _chats(index)?.leave(this, false, accumulator)
-      | Compute => Fibonacci(35) ; accumulator.stop(Compute)
+      | Compute => 
+        for i in Range[U64](0, 10000) do
+          if Fibonacci(_fib_index) != 9_227_465 then
+            // This never happens, but makes it impossible for LLVM
+            // to opt-out this entire loop.
+            accumulator.stop(Error)
+            _fib_index = _fib_index + 1
+          end
+        end
+
+        accumulator.stop(Compute)
       | Invite =>
         let created = Chat(this)
 
@@ -500,6 +514,7 @@ actor Poker
               | Invite       => "Invite"
               | Compute      => "Compute"
               | Ignore       => "Ignore"
+              | Error        => "Error"
               | None         => "None"
               end
 
